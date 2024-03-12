@@ -1,0 +1,152 @@
+Logging into Derecho
+
+1.	Log in to Derecho
+  ssh -X -Y jayent@derecho.hpc.ucar.edu
+Sign in with the assigned password/ Duo verification
+
+2.	Create directory for Project
+mkdir EAS-5555
+
+3.	Copy the WRF and WPS executables to your home directory 
+cd /glade/work/wrfhelp/derecho_pre_compiled_code
+	Locate executables
+cp -rp wrfv4.1 ~/EAS-5555/
+Copy wrf executables to local computer
+r: recursively go through all directories and copy all. p: preserve timestamp
+~/ means $HOME, which means /glade/u/home/<username>
+cp -rp wpsv4.1 ~/EAS-5555/
+Copy wps executables to local computer
+
+4.	Download DATA for the WPS preprocessing system
+
+cd ~/EAS-5555/
+mkdir DATA
+cd DATA
+wget https://www2.mmm.ucar.edu/wrf/TUTORIAL_DATA/matthew_1deg.tar.gz
+tar -xvf matthew_1deg.tar.gz 
+Unzip data
+
+5.	Complie WRF (to produce real.exe, wrf.exe)
+	cd ~/EAS-5555/wrfv4.1 
+	./compile
+
+6.	Complie WPS (to produce geogrid.exe, ungrib.exe, metgrid.exe)
+	cd ~/EAS-5555/wpsv4.1 
+./compile
+
+7.	Modify namelist.wps and namelist.input
+
+cd ~/EAS-5555/wpsv4.1 
+nano namelist.wps
+
+&share
+ wrf_core = 'ARW',
+max_dom = 1,
+ start_date = '2016-10-06_00:00:00',
+end_date   = '2016-10-08_00:00:00',
+ interval_seconds = 21600
+io_form_geogrid = 2,
+/
+max_dom = 1 
+parent_id = 1,
+parent_grid_ratio = 1,
+i_parent_start = 1,
+j_parent_start = 1,
+e_we = 91,
+e_sn = 100,
+geog_data_res = 'default',
+dx = 27000,
+dy = 27000,
+map_proj = 'mercator',
+ref_lat = 28.00,
+ref_lon = -75.00,
+truelat1 = 30.0,
+truelat2 = 60.0,
+stand_lon = -75.0,
+geog_data_path = '/glade/work/wrfhelp/WPS_GEOG/'
+
+
+8.	Run ungrib
+cd ~/EAS-5555/wpsv4.1/
+Navigate to WPS directory
+ln -sf ungrib/Variable_Tables/Vtable.GFS Vtable
+Link Vtable from the directory ungrib/Variable_Tables/ to current directory
+./link_grib.csh path_to_data
+	Link input GRIB data
+	ls -alstr to check if successful
+./ungrib.exe
+
+9.	Run geogrid
+./geogrid.exe
+
+10.	Run metgrid
+./metgrid.exe
+
+11.	Run wrf
+cd ~/EAS-5555/wrfv4.1/test/em_real/
+Navigate back to the directory where the executable can be accessed
+ln -sf ~/EAS-5555/wpsv4.1/met_em.d01.2016-10* .
+Link the files we just created in the WPS directory to the WRF directory
+	nano namelist.input
+run_days = 0,
+run_hours = 48,
+run_minutes = 0,
+run_seconds = 0,
+start_year = 2016,
+start_month = 10,
+start_day = 06,
+start_hour = 00,
+end_year = 2016,
+end_month = 10,
+end_day = 08,
+end_hour = 00,
+interval_seconds = 21600
+input_from_file = .true.,
+history_interval = 180,
+frames_per_outfile = 1,
+restart = .false.,
+restart_interval = 1440,
+time_step = 150,
+max_dom = 1,
+e_we = 91,
+e_sn = 100,
+e_vert = 45,
+num_metgrid_levels = 32
+dx = 27000,
+dy = 27000,
+Edit namelist.input
+
+12.	Run real.exe
+./real.exe
+Use cat rsl.error.0000 to check success
+./wrf.exe
+
+13.	 View outputs
+module load ncview
+ncview filename
+
+14.	 Create Shell Script to automate (WikiHow)
+
+Go to the directory where the script will be stored
+cd ~/EAS-5555
+vim AutomateWRF.sh
+i
+	To allow you to insert/ start typing (i for insert), Alternatively use nano
+#!/bin/bash
+	Shebang line. Runs program /bin/bash with ListDir.sh as first argument
+Type the contents of the script
+<Exit> 
+: wq
+chmod +x ListDir.sh
+	Change access permissions to run scripts on Unix
+./ListDir.s
+	Runs the script
+
+
+
+Continue from here
+ https://www2.mmm.ucar.edu/wrf/OnLineTutorial/Basics/wrf.php
+
+
+
+
